@@ -1,36 +1,87 @@
-# Warning: This docker-compose file is made for development purposes.
-# Using it will build an image from the locally cloned repository.
-#
-# If you want to use Invidious in production, see the docker-compose.yml file provided
-# in the installation documentation: https://docs.invidious.io/installation/
+version: "3.7"
 
-version: "3"
 services:
-
   invidious:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    restart: unless-stopped
+    container_name: invidious
+    hostname: invidious
+    #image: quay.io/invidious/invidious:latest
+    restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3016:3000"
     environment:
-      # Please read the following file for a comprehensive list of all available
-      # configuration options and their associated syntax:
-      # https://github.com/iv-org/invidious/blob/master/config/config.example.yml
       INVIDIOUS_CONFIG: |
         db:
           dbname: invidious
           user: kemal
-          password: kemal
+          password: changethis
           host: invidious-db
           port: 5432
         check_tables: true
-        # external_port:
-        # domain:
-        # https_only: false
-        # statistics_enabled: false
-        hmac_key: "CHANGE_ME!!"
+        external_port: 443
+        domain: changethis
+        https_only: true
+        statistics_enabled: true
+        hsts: true
+        force_resolve: ipv4, ipv6
+        popular_enabled: false
+        registration_enabled: true
+        login_enabled: true
+        captcha_enabled: true
+        admins: ["changethis"]
+        enable_user_notifications: true
+        channel_threads: 1
+        channel_refresh_interval: 30m
+        full_refresh: false
+        feed_threads: 1
+        banner: <center>Please help with <a href="https://www.whateveritworks.org/donate" rel="noreferrer" target="_blank">Server Cost</a> to be able to support this Modified Invidious Instance.  <a href="https://github.com/yattee/yattee" rel="noreferrer" target="_blank">Yattee (Invidious Client For iOS)</a> & <a href="https://github.com/lamarios/clipious" rel="noreferrer" target="_blank">Clipious (Invidious Client For Android)</a></center>
+        use_pubsub_feeds: true
+        hmac_key: changethis
+        cache_annotations: true
+        modified_source_code_url: "https://github.com/WhateverItWorks/invidious-reworked"
+        playlist_length_limit: 500
+        region: US
+        locale: en-US
+        captions: ["English", "Dutch", "Spanish"]
+        dark_mode: "dark"
+        thin_mode: false
+        feed_menu: ["Trending", "Subscriptions", "Playlists"]
+        default_home: "none"
+        max_results: 40
+        annotations: false
+        annotations_subscribed: false
+        comments: ["youtube", ""]
+        player_style: invidious
+        related_videos: true
+        autoplay: true
+        continue: true
+        continue_autoplay: true
+        listen: false
+        video_loop: false
+        quality: hd720
+        quality_dash: 1080p
+        speed: 1.0
+        volume: 100
+        vr_mode: true
+        save_player_pos: true
+        latest_only: true
+        notifications_only: true
+        unseen_only: true
+        sort: published
+        local: true
+        show_nick: true
+        automatic_instance_redirect: false
+        extend_desc: true
     healthcheck:
       test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/comments/jNQXAC9IVRw || exit 1
       interval: 30s
@@ -40,16 +91,20 @@ services:
       - invidious-db
 
   invidious-db:
-    image: docker.io/library/postgres:13
-    restart: unless-stopped
+    container_name: invidious-db
+    hostname: invidious-db
+    image: docker.io/library/postgres:15
+    restart: always
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - postgresdata:/var/lib/postgresql/data
+      - ./postgresdata:/var/lib/postgresql/data
       - ./config/sql:/config/sql
       - ./docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh
     environment:
       POSTGRES_DB: invidious
       POSTGRES_USER: kemal
-      POSTGRES_PASSWORD: kemal
+      POSTGRES_PASSWORD: changethis
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
 
